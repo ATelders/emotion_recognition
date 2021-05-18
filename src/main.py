@@ -6,14 +6,16 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import confusion_matrix
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 
 data_input = st.sidebar.radio('Data', ['Kaggle','data.world'])
+
+labels_kaggle = ['happy', 'sadness', 'love', 'anger', 'fear', 'surprise'] 
 
 @st.cache
 def load_data():
@@ -73,13 +75,14 @@ if chapter_input == 'Analysis and processing':
     results = data['emotion'].value_counts()
     sns.histplot(data=data, y="emotion")
     st.set_option('deprecation.showPyplotGlobalUse', False)
-
     st.pyplot()
 
 if chapter_input == 'Classification':
     st.write('Classification models')
     alg=['Decision Tree', 'Random Forest', 'Support Vector Machine']
-    y_label = le.inverse_transform(y_test)
+    #inverse label transformation using label encoder (le)
+    y_test_labels = le.inverse_transform(y_test)
+
 
     classifier = st.selectbox('Which algorithm?', alg)
     if classifier=='Decision Tree':
@@ -88,21 +91,41 @@ if chapter_input == 'Classification':
         acc = dtc.score(X_test, y_test)
         st.write('Accuracy: ', acc)
         pred_dtc = dtc.predict(X_test)
-        cm_dtc=confusion_matrix(y_test,pred_dtc)
-        st.write('Confusion matrix: ', cm_dtc)
+        pred_labels = le.inverse_transform(pred_dtc)
+        st.write('Confusion matrix: ')
+        #display confusion matrix with labels
+        labels = labels_kaggle
+        cm = confusion_matrix(y_test_labels, pred_labels, labels=labels)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
+        disp.plot(cmap=plt.cm.Blues)
+        st.pyplot()
     elif classifier == 'Random Forest':
         clf = RandomForestClassifier(random_state=0)
         clf.fit(X_train, y_train)
         acc = clf.score(X_test, y_test)
         st.write('Accuracy: ', acc)
         pred_clf = clf.predict(X_test)
-        cm_clf=confusion_matrix(y_test,pred_clf)
-        st.write('Confusion matrix: ', cm_clf)        
+        pred_labels = le.inverse_transform(pred_clf)
+        st.write('Confusion matrix: ')
+        #display confusion matrix with labels
+        labels = labels_kaggle
+        cm = confusion_matrix(y_test_labels, pred_labels, labels=labels)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
+        disp.plot(cmap=plt.cm.Blues)
+        st.pyplot()       
     elif classifier == 'Support Vector Machine':
         svm=SVC()
         svm.fit(X_train, y_train)
         acc = svm.score(X_test, y_test)
         st.write('Accuracy: ', acc)
         pred_svm = svm.predict(X_test)
-        cm=confusion_matrix(y_test,pred_svm)
-        st.write('Confusion matrix: ', cm)
+        pred_labels = le.inverse_transform(pred_svm)
+        st.write('Confusion matrix: ')
+        #display confusion matrix with labels
+        labels = labels_kaggle
+        cm = confusion_matrix(y_test_labels, pred_labels, labels=labels)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
+        disp.plot(cmap=plt.cm.Blues)
+        st.pyplot()
+
+
