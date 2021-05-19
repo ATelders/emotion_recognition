@@ -12,17 +12,18 @@ from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.linear_model import LogisticRegression
+#from xgboost import XGBClassifier
 
 data_input = st.sidebar.radio('Data', ['Kaggle','data.world'])
 
 @st.cache
 def load_data():
     if data_input == 'Kaggle':
-        DATA_URL = ('./data/raw/Emotion_final.csv')
+        DATA_URL = ('../data/raw/Emotion_final.csv')
         data = pd.read_csv(DATA_URL)
         labels = ['happy', 'sadness', 'love', 'anger', 'fear', 'surprise'] 
     elif data_input == 'data.world':
-        DATA_URL = ('./data/raw/text_emotion.csv')
+        DATA_URL = ('../data/raw/text_emotion.csv')
         data = pd.read_csv(DATA_URL)
         data['emotion'] = data['sentiment']
         data['text'] = data['content']
@@ -74,8 +75,6 @@ def create_logistic_regression(X_train, y_train, X_test, y_test):
     pred_labels = le.inverse_transform(pred)
     return acc, pred, pred_labels
 
-acc_lr, pred_lr, pred_labels_lr = create_logistic_regression(X_train, y_train, X_test, y_test)
-
 @st.cache
 def create_decision_tree(X_train, y_train, X_test, y_test):
     classifier = DecisionTreeClassifier()
@@ -94,8 +93,24 @@ def create_random_forest(X_train, y_train, X_test, y_test):
     pred_labels = le.inverse_transform(pred)
     return acc, pred, pred_labels
 
+@st.cache
+def create_svm(X_train, y_train, X_test, y_test):
+    classifier = SVC()
+    classifier.fit(X_train, y_train)
+    acc = classifier.score(X_test, y_test)
+    pred = classifier.predict(X_test)
+    pred_labels = le.inverse_transform(pred)
+    return acc, pred, pred_labels
 
-st.write('Accuracy (Logistic Regression)', acc_lr)
+# @st.cache
+# def create_xgboost(X_train, y_train, X_test, y_test):
+#     classifier = XGBoost()
+#     classifier.fit(X_train, y_train)
+#     acc = classifier.score(X_test, y_test)
+#     pred = classifier.predict(X_test)
+#     pred_labels = le.inverse_transform(pred)
+#     return acc, pred, pred_labels
+
 
 
 chapter_input = st.sidebar.radio('Chapters', ['Analysis and processing','Classification'])
@@ -111,18 +126,31 @@ if chapter_input == 'Analysis and processing':
 
 if chapter_input == 'Classification':
     st.write('Classification models')
-    alg=['Decision Tree', 'Random Forest', 'Support Vector Machine']
+    alg=['Logistic Regression', 'Decision Tree', 'Random Forest', 'Support Vector Machine']
     #inverse label transformation using label encoder (le)
     y_test_labels = le.inverse_transform(y_test)
 
+    acc_display_lr = 0
+    acc_display_dt = 0
+    acc_rf = 0
+    acc_svm = 0
+    acc_nn = 0
 
     classifier = st.selectbox('Which algorithm?', alg)
+    if classifier=='Logistic Regression':
+        acc_lr, pred_lr, pred_labels_lr = create_logistic_regression(X_train, y_train, X_test, y_test)
+        st.write('Accuracy: ', acc_lr)
+        st.write('Confusion matrix: ')
+        #display confusion matrix with labels
+        cm = confusion_matrix(y_test_labels, pred_labels_lr, labels=labels)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
+        disp.plot(cmap=plt.cm.Blues)
+        st.pyplot()
     if classifier=='Decision Tree':
         acc_dt, pred_dt, pred_labels_dt = create_decision_tree(X_train, y_train, X_test, y_test)
         st.write('Accuracy: ', acc_dt)
         st.write('Confusion matrix: ')
         #display confusion matrix with labels
-
         cm = confusion_matrix(y_test_labels, pred_labels_dt, labels=labels)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
         disp.plot(cmap=plt.cm.Blues)
@@ -132,24 +160,24 @@ if chapter_input == 'Classification':
         st.write('Accuracy: ', acc_rf)
         st.write('Confusion matrix: ')
         #display confusion matrix with labels
-
         cm = confusion_matrix(y_test_labels, pred_labels_rf, labels=labels)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
         disp.plot(cmap=plt.cm.Blues)
         st.pyplot()       
     elif classifier == 'Support Vector Machine':
-        svm=SVC()
-        svm.fit(X_train, y_train)
-        acc = svm.score(X_test, y_test)
-        st.write('Accuracy: ', acc)
-        pred_svm = svm.predict(X_test)
-        pred_labels = le.inverse_transform(pred_svm)
+        acc_svm, pred_svm, pred_labels_svm = create_svm(X_train, y_train, X_test, y_test)
+        st.write('Accuracy: ', acc_svm)
         st.write('Confusion matrix: ')
         #display confusion matrix with labels
-
-        cm = confusion_matrix(y_test_labels, pred_labels, labels=labels)
+        cm = confusion_matrix(y_test_labels, pred_labels_svm, labels=labels)
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
         disp.plot(cmap=plt.cm.Blues)
         st.pyplot()
 
-
+    st.write('''Accuracy\n\n
+    Logistic Regression: {}\n
+    Decision Tree: {}\n
+    Random Forest: {}\n
+    Support Vector Machine: {}\n
+    Neural Network: {}\n
+        '''.format(0,0,0,0,0))
