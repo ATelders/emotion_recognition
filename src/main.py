@@ -15,7 +15,7 @@ from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
+#from xgboost import XGBClassifier
 
 from tensorflow import keras
 from tensorflow.keras import layers
