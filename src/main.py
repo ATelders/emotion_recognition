@@ -39,11 +39,11 @@ def load_data():
     Load data based on the user's choice
     '''
     if data_input == 'Kaggle':
-        DATA_URL = ('../data/raw/Emotion_final.csv')
+        DATA_URL = ('./data/raw/Emotion_final.csv')
         data = pd.read_csv(DATA_URL)
         labels = ['happy', 'sadness', 'love', 'anger', 'fear', 'surprise'] 
     elif data_input == 'data.world':
-        DATA_URL = ('../data/raw/text_emotion.csv')
+        DATA_URL = ('./data/raw/text_emotion.csv')
         data = pd.read_csv(DATA_URL)
         data['emotion'] = data['sentiment']
         data['text'] = data['content']
