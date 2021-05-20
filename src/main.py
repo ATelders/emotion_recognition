@@ -4,7 +4,9 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import spacy
+#import fasttext
+#import fasttext.util
+import io
 
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
@@ -15,19 +17,10 @@ from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.linear_model import LogisticRegression
-#from xgboost import XGBClassifier
 
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
-
-# ------------------------------------------------------------------------------------------------
-
-# NLP spacy model
-
-nlp = spacy.blank("en")
-
-
 
 # ------------------------------------------------------------------------------------------------
 
@@ -123,26 +116,52 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     loss='sparse_categorical_crossentropy',
     metrics = 'accuracy',
     )
-    st.write('', model.summary())
-    st.write('OK')
+    #st.write('', model.summary())
+    #st.write('OK')
     history = model.fit(
     X_train, y_train,
     validation_data=(X_test, y_test),
     batch_size=100,
-    epochs=50,
+    epochs=10,
     verbose=1
     )
-    # Show the learning curves
+    early_stopping = keras.callbacks.EarlyStopping(
+    patience=5,
+    min_delta=0.001,
+    restore_best_weights=True,
+    )
     history_df = pd.DataFrame(history.history)
-    st.write(history_df)
-    history_df.loc[:, ['loss', 'val_loss']].plot()
-    st.pyplot()
+    #st.write(history_df)
+    
+    
     pred = pd.DataFrame(model.predict(X_test))
     pred.rename(columns={0: "anger", 1: "fear", 2: "happy", 3: "love", 4: "sadness", 5: "surprise"}, errors="raise", inplace=True)
     sentences_df = pd.DataFrame(sentences_test)
     sentences_pred = pd.concat([sentences_df, pred], axis=1)
-    st.write(sentences_pred)
+    #st.write(sentences_pred)
+    return sentences_pred, history_df   
 
+def display_nn():
+    st.write(sentences_pred)
+    # Show the learning curves
+    history_df.loc[:, ['loss', 'val_loss']].plot()
+    st.pyplot()
+
+@st.cache
+def load_vectors(fname):
+    fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
+    n, d = map(int, fin.readline().split())
+    data = {}
+    for line in fin:
+        tokens = line.rstrip().split(' ')
+        data[tokens[0]] = map(float, tokens[1:])
+    return data
+
+# def csv_to_txt(file):
+#     data = 
+#     return data
+
+#ft = fasttext.load_model('../data/raw/cc.en.300.bin')
 
 # App title
 
@@ -193,12 +212,10 @@ if chapter_input == 'Analysis and processing':
     st.set_option('deprecation.showPyplotGlobalUse', False)
     st.pyplot()
 
-
-    st.write(matrix)
-
 # ------------------------------------------------------------------------------------------------
 
 # Classification
+
 
 X_train = tf.transform(sentences_train)
 X_test  = tf.transform(sentences_test)
@@ -254,8 +271,8 @@ if chapter_input == 'Classification':
         st.pyplot()
     elif classifier == 'Neural Network':
         # pred_nn, pred_labels_nn = 
-        create_neural_network(X_train, y_train, X_test, y_test)
-
+        sentences_pred, history_df = create_neural_network(X_train, y_train, X_test, y_test)
+        display_nn()
         # st.write('Confusion matrix: ')
         # #display confusion matrix with labels
         # cm = confusion_matrix(y_test_labels, pred_labels_nn, labels=labels)
