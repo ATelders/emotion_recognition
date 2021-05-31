@@ -58,6 +58,7 @@ dependencies:
   - decorator=5.0.9=pyhd8ed1ab_0
   - defusedxml=0.7.1=pyhd8ed1ab_0
   - entrypoints=0.3=pyhd8ed1ab_1003
+  - fasttext=0.9.2=hc9558a2_1
   - freetype=2.10.4=h7ca028e_0
   - gast=0.4.0=py_0
   - gflags=2.2.2=he1b5a44_1004
@@ -250,4 +251,6 @@ dependencies:
   - zipp=3.4.1=pyhd3eb1b0_0
   - zlib=1.2.11=h7b6447c_3
   - zstd=1.4.9=ha95c52a_0
+  - pip:
+    - pybind11==2.6.2
 prefix: /home/apprenant/anaconda3/envs/tensorflow_env

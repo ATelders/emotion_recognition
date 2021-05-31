@@ -1,3 +1,7 @@
 data/raw/cc.en.300.bin
 data/raw/cc.en.300.bin.gz
 src/d00_utils/fastText
+data/models/rf_kaggle_count.sav
+data/models/rf_kaggle_tfidf.sav
+data/models/rf_world_count.sav
+data/models/rf_world_tfidf.sav

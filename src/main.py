@@ -7,6 +7,8 @@ import seaborn as sns
 #import fasttext
 #import fasttext.util
 import io
+import pickle
+import pathlib
 
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
@@ -15,12 +17,14 @@ from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 from sklearn.linear_model import LogisticRegression
 
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
+
+from src.d00_utils import ft
 
 # ------------------------------------------------------------------------------------------------
 
@@ -32,6 +36,7 @@ def load_data():
     Load data based on the user's choice
     '''
     if data_input == 'Kaggle':
+        current_dataset_name = 'Kaggle'
         DATA_URL = ('./data/raw/Emotion_final.csv')
         data = pd.read_csv(DATA_URL)
         labels = ['happy', 'sadness', 'love', 'anger', 'fear', 'surprise'] 
@@ -41,7 +46,7 @@ def load_data():
         data['emotion'] = data['sentiment']
         data['text'] = data['content']
         data = data[['text', 'emotion']]
-        labels = ['happy', 'sadness', 'love', 'anger', 'fear', 'surprise'] 
+        labels = data['emotion'].unique()
     else:
         st.write('No data')
     lowercase = lambda x: str(x).lower()
@@ -62,8 +67,19 @@ def create_model(data, model):
 
 @st.cache
 def create_logistic_regression(X_train, y_train, X_test, y_test):
-    classifier = LogisticRegression(max_iter=1000)
-    classifier.fit(X_train, y_train)
+    # classifier = LogisticRegression(max_iter=1000)
+    # classifier.fit(X_train, y_train)
+    if data_input == "Kaggle":
+        if vectorizer_input == "CountVectorizer":
+            filename = './data/models/lr_kaggle_count.sav'
+        elif vectorizer_input == "TfidfVectorizer":
+            filename = './data/models/lr_kaggle_tfidf.sav'
+    elif data_input == "data.world":
+        if vectorizer_input == "CountVectorizer":
+            filename = './data/models/lr_world_count.sav'
+        elif vectorizer_input == "TfidfVectorizer":
+            filename = './data/models/lr_world_tfidf.sav'
+    classifier = pickle.load(open(filename, 'rb'))
     acc = classifier.score(X_test, y_test)
     pred = classifier.predict(X_test)
     pred_labels = le.inverse_transform(pred)
@@ -71,8 +87,19 @@ def create_logistic_regression(X_train, y_train, X_test, y_test):
 
 @st.cache
 def create_decision_tree(X_train, y_train, X_test, y_test):
-    classifier = DecisionTreeClassifier()
-    classifier.fit(X_train, y_train)
+    # classifier = DecisionTreeClassifier()
+    # classifier.fit(X_train, y_train)
+    if data_input == "Kaggle":
+        if vectorizer_input == "CountVectorizer":
+            filename = './data/models/dt_kaggle_count.sav'
+        elif vectorizer_input == "TfidfVectorizer":
+            filename = './data/models/dt_kaggle_tfidf.sav'
+    elif data_input == "data.world":
+        if vectorizer_input == "CountVectorizer":
+            filename = './data/models/dt_world_count.sav'
+        elif vectorizer_input == "TfidfVectorizer":
+            filename = './data/models/dt_world_tfidf.sav'
+    classifier = pickle.load(open(filename, 'rb'))
     acc = classifier.score(X_test, y_test)
     pred = classifier.predict(X_test)
     pred_labels = le.inverse_transform(pred)
@@ -82,6 +109,17 @@ def create_decision_tree(X_train, y_train, X_test, y_test):
 def create_random_forest(X_train, y_train, X_test, y_test):
     classifier = RandomForestClassifier()
     classifier.fit(X_train, y_train)
+    # if data_input == "Kaggle":
+    #     if vectorizer_input == "CountVectorizer":
+    #         filename = './data/models/rf_kaggle_count.sav'
+    #     elif vectorizer_input == "TfidfVectorizer":
+    #         filename = './data/models/rf_kaggle_tfidf.sav'
+    # elif data_input == "data.world":
+    #     if vectorizer_input == "CountVectorizer":
+    #         filename = './data/models/rf_world_count.sav'
+    #     elif vectorizer_input == "TfidfVectorizer":
+    #         filename = './data/models/rf_world_tfidf.sav'
+    #classifier = pickle.load(open(filename, 'rb'))
     acc = classifier.score(X_test, y_test)
     pred = classifier.predict(X_test)
     pred_labels = le.inverse_transform(pred)
@@ -89,12 +127,35 @@ def create_random_forest(X_train, y_train, X_test, y_test):
 
 @st.cache
 def create_svm(X_train, y_train, X_test, y_test):
-    classifier = SVC()
-    classifier.fit(X_train, y_train)
+    # classifier = SVC()
+    # classifier.fit(X_train, y_train)
+    if data_input == "Kaggle":
+        if vectorizer_input == "CountVectorizer":
+            filename = './data/models/svm_kaggle_count.sav'
+        elif vectorizer_input == "TfidfVectorizer":
+            filename = './data/models/svm_kaggle_tfidf.sav'
+    elif data_input == "data.world":
+        if vectorizer_input == "CountVectorizer":
+            filename = './data/models/svm_world_count.sav'
+        elif vectorizer_input == "TfidfVectorizer":
+            filename = './data/models/svm_world_tfidf.sav'
+    classifier = pickle.load(open(filename, 'rb'))
     acc = classifier.score(X_test, y_test)
     pred = classifier.predict(X_test)
     pred_labels = le.inverse_transform(pred)
     return acc, pred, pred_labels
+
+def display_metrics(acc, pred, pred_labels):
+        st.write('Accuracy: ', acc)
+        st.write('Confusion matrix: ')
+        #display confusion matrix with labels
+        cm = confusion_matrix(y_test_labels, pred_labels, labels=labels)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
+        disp.plot(cmap=plt.cm.Blues)
+        plt.xticks(rotation=90)
+        st.pyplot()
+        report = classification_report(y_test_labels, pred_labels)
+        st.code(report)
 
 @st.cache(suppress_st_warning=True)
 def create_neural_network(X_train, y_train, X_test, y_test):
@@ -122,7 +183,7 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     X_train, y_train,
     validation_data=(X_test, y_test),
     batch_size=100,
-    epochs=10,
+    epochs=35,
     verbose=1
     )
     early_stopping = keras.callbacks.EarlyStopping(
@@ -157,9 +218,33 @@ def load_vectors(fname):
         data[tokens[0]] = map(float, tokens[1:])
     return data
 
-# def csv_to_txt(file):
-#     data = 
-#     return data
+# def make_ft():
+#     LOAD_MODEL = False
+#     model_file_name = "fasttext_{}.bin".format(current_dataset_name)
+#     df = data.copy()
+#     y = df.emotion
+#     X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=1, stratify=y)
+#     with open('train.txt', 'w') as f:
+#         for each_text, each_label in zip(X_train.text, X_train.emotion):
+#             f.writelines(f'__label__{each_label} {each_text}\n')
+#     with open('test.txt', 'w') as f:
+#         for each_text, each_label in zip(X_test.text, X_test.emotion):
+#             f.writelines(f'__label__{each_label} {each_text}\n')
+
+#     if LOAD_MODEL and pathlib.Path(model_file_name).exists():
+#             model = fasttext.load_model(model_file_name)
+#     else:
+#         model = fasttext.train_supervised("train.txt")
+    
+#     model.save_model(model_file_name)
+#     st.write("vocabulary size: {}".format(len(model.words)))
+#     N, p, r = model.test('test.txt')
+#     st.write("Precision\t{:.3f}".format(p))
+#     st.write("Recall \t{:.3f}".format(r))
+#     st.write("i'm so happy today because it's my birthday")
+#     st.write(model.predict("i'm so happy today because it's my birthday",k=3))
+
+
 
 #ft = fasttext.load_model('../data/raw/cc.en.300.bin')
 
@@ -203,6 +288,7 @@ tf.fit(sentences_train)
 # Analysis and processing
 
 if chapter_input == 'Analysis and processing':
+    st.header('Analysis and processing')
     if st.checkbox('Show dataframe'): 
         st.write(data)
     
@@ -210,7 +296,17 @@ if chapter_input == 'Analysis and processing':
     results = data['emotion'].value_counts()
     sns.histplot(data=data, y="emotion")
     st.set_option('deprecation.showPyplotGlobalUse', False)
+    st.subheader('Distribution of emotions in the dataset')
+
     st.pyplot()
+    st.subheader('25 most frequent words')
+    if data_input == 'Kaggle':
+        st.image('../assets/frequency_kaggle.png')
+    if data_input == 'data.world':
+        st.image('../assets/frequency_world.png')
+
+
+
 
 # ------------------------------------------------------------------------------------------------
 
@@ -221,7 +317,7 @@ X_train = tf.transform(sentences_train)
 X_test  = tf.transform(sentences_test)
 
 if chapter_input == 'Classification':
-    st.write('Classification models')
+    st.header('Classification')
     alg=['Logistic Regression', 'Decision Tree', 'Random Forest', 'Support Vector Machine', 'Neural Network']
     #inverse label transformation using label encoder (le)
     y_test_labels = le.inverse_transform(y_test)
@@ -234,56 +330,19 @@ if chapter_input == 'Classification':
 
     classifier = st.selectbox('Which algorithm?', alg)
     if classifier=='Logistic Regression':
-        acc_lr, pred_lr, pred_labels_lr = create_logistic_regression(X_train, y_train, X_test, y_test)
-        st.write('Accuracy: ', acc_lr)
-        st.write('Confusion matrix: ')
-        #display confusion matrix with labels
-        cm = confusion_matrix(y_test_labels, pred_labels_lr, labels=labels)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
-        disp.plot(cmap=plt.cm.Blues)
-        st.pyplot()
+        acc, pred, pred_labels = create_logistic_regression(X_train, y_train, X_test, y_test)
+        display_metrics(acc, pred, pred_labels)
+
     if classifier=='Decision Tree':
-        acc_dt, pred_dt, pred_labels_dt = create_decision_tree(X_train, y_train, X_test, y_test)
-        st.write('Accuracy: ', acc_dt)
-        st.write('Confusion matrix: ')
-        #display confusion matrix with labels
-        cm = confusion_matrix(y_test_labels, pred_labels_dt, labels=labels)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
-        disp.plot(cmap=plt.cm.Blues)
-        st.pyplot()
+        acc, pred, pred_labels = create_decision_tree(X_train, y_train, X_test, y_test)
+        display_metrics(acc, pred, pred_labels)
     elif classifier == 'Random Forest':
-        acc_rf, pred_rf, pred_labels_rf = create_random_forest(X_train, y_train, X_test, y_test)
-        st.write('Accuracy: ', acc_rf)
-        st.write('Confusion matrix: ')
-        #display confusion matrix with labels
-        cm = confusion_matrix(y_test_labels, pred_labels_rf, labels=labels)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
-        disp.plot(cmap=plt.cm.Blues)
-        st.pyplot()       
+        acc, pred, pred_labels = create_random_forest(X_train, y_train, X_test, y_test)
+        display_metrics(acc, pred, pred_labels)   
     elif classifier == 'Support Vector Machine':
-        acc_svm, pred_svm, pred_labels_svm = create_svm(X_train, y_train, X_test, y_test)
-        st.write('Accuracy: ', acc_svm)
-        st.write('Confusion matrix: ')
-        #display confusion matrix with labels
-        cm = confusion_matrix(y_test_labels, pred_labels_svm, labels=labels)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
-        disp.plot(cmap=plt.cm.Blues)
-        st.pyplot()
+        acc, pred, pred_labels = create_svm(X_train, y_train, X_test, y_test)
+        display_metrics(acc, pred, pred_labels)
     elif classifier == 'Neural Network':
         # pred_nn, pred_labels_nn = 
         sentences_pred, history_df = create_neural_network(X_train, y_train, X_test, y_test)
         display_nn()
-        # st.write('Confusion matrix: ')
-        # #display confusion matrix with labels
-        # cm = confusion_matrix(y_test_labels, pred_labels_nn, labels=labels)
-        # disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
-        # disp.plot(cmap=plt.cm.Blues)
-        # st.pyplot()
-
-    st.write('''Accuracy\n\n
-    Logistic Regression: {}\n
-    Decision Tree: {}\n
-    Random Forest: {}\n
-    Support Vector Machine: {}\n
-    Neural Network: {}\n
-        '''.format(0,0,0,0,0))
