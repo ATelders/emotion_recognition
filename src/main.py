@@ -4,8 +4,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-#import fasttext
-#import fasttext.util
+import fasttext
 import io
 import pickle
 import pathlib
@@ -34,7 +33,6 @@ def load_data():
     Load data based on the user's choice
     '''
     if data_input == 'Kaggle':
-        current_dataset_name = 'Kaggle'
         DATA_URL = ('./data/raw/Emotion_final.csv')
         data = pd.read_csv(DATA_URL)
         labels = ['happy', 'sadness', 'love', 'anger', 'fear', 'surprise'] 
@@ -158,6 +156,7 @@ def display_metrics(acc, pred, pred_labels):
 @st.cache(suppress_st_warning=True)
 def create_neural_network(X_train, y_train, X_test, y_test):
     input_dim = X_train.shape[1]
+    output_dim = len(labels)
     model = keras.Sequential([
     layers.Dense(10, input_shape=(input_dim,), activation='relu'),
     layers.Dropout(0.2),
@@ -168,15 +167,13 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     layers.Dense(10, activation='relu'),
     layers.Dropout(0.2),
     layers.BatchNormalization(),
-    layers.Dense(6, activation='softmax')
+    layers.Dense(output_dim, activation='softmax')
     ])
     model.compile(
     optimizer='adam',
     loss='sparse_categorical_crossentropy',
     metrics = 'accuracy',
     )
-    #st.write('', model.summary())
-    #st.write('OK')
     history = model.fit(
     X_train, y_train,
     validation_data=(X_test, y_test),
@@ -194,7 +191,12 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     
     
     pred = pd.DataFrame(model.predict(X_test))
-    pred.rename(columns={0: "anger", 1: "fear", 2: "happy", 3: "love", 4: "sadness", 5: "surprise"}, errors="raise", inplace=True)
+
+    temp_cols = pred.columns
+    emotion_cols = le.inverse_transform(temp_cols)
+
+    pred.columns = emotion_cols
+
     sentences_df = pd.DataFrame(sentences_test)
     sentences_pred = pd.concat([sentences_df, pred], axis=1)
     y_pred = pred.idxmax(axis=1)
@@ -219,35 +221,48 @@ def load_vectors(fname):
         data[tokens[0]] = map(float, tokens[1:])
     return data
 
-# def make_ft():
-#     LOAD_MODEL = False
-#     model_file_name = "fasttext_{}.bin".format(current_dataset_name)
-#     df = data.copy()
-#     y = df.emotion
-#     X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=1, stratify=y)
-#     with open('train.txt', 'w') as f:
-#         for each_text, each_label in zip(X_train.text, X_train.emotion):
-#             f.writelines(f'__label__{each_label} {each_text}\n')
-#     with open('test.txt', 'w') as f:
-#         for each_text, each_label in zip(X_test.text, X_test.emotion):
-#             f.writelines(f'__label__{each_label} {each_text}\n')
+def make_ft():
+    LOAD_MODEL = False
+    model_file_name = "fasttext_{}.bin".format(data_input)
+    df = data.copy()
+    y = df.pop('emotion')
+    X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=1, stratify=y)
 
-#     if LOAD_MODEL and pathlib.Path(model_file_name).exists():
-#             model = fasttext.load_model(model_file_name)
-#     else:
-#         model = fasttext.train_supervised("train.txt")
+    with open('train.txt', 'w') as f:
+        for each_text, each_label in zip(X_train.text, y_train):
+            f.writelines(f'__label__{each_label} {each_text}\n')
+    with open('test.txt', 'w') as f:
+        for each_text, each_label in zip(X_test.text, y_test):
+            f.writelines(f'__label__{each_label} {each_text}\n')
+
+    if LOAD_MODEL and pathlib.Path(model_file_name).exists():
+            model = fasttext.load_model(model_file_name)
+    else:
+        model = fasttext.train_supervised("train.txt")
     
-#     model.save_model(model_file_name)
-#     st.write("vocabulary size: {}".format(len(model.words)))
-#     N, p, r = model.test('test.txt')
-#     st.write("Precision\t{:.3f}".format(p))
-#     st.write("Recall \t{:.3f}".format(r))
-#     st.write("i'm so happy today because it's my birthday")
-#     st.write(model.predict("i'm so happy today because it's my birthday",k=3))
+    model.save_model(model_file_name)
+    st.write("vocabulary size: {}".format(len(model.words)))
+    N, p, r = model.test('test.txt')
+    st.write("Precision\t{:.3f}".format(p))
+    st.write("Recall \t{:.3f}".format(r))
 
+    predictions_df = pd.DataFrame(X_test.text)
+    predictions_df['emotion'] = y_test
+    def predict(row):
+        return model.predict(row['text'])[0][0].split("__label__")[1]
+    predictions_df['predictions'] = predictions_df.apply(predict,axis=1)
+    st.write(predictions_df)
 
+    user_sentence = st.text_input("Write a sentence", "I am happy")
+    st.write("Your sentence is:", predict_emotion(model, user_sentence))
 
-#ft = fasttext.load_model('../data/raw/cc.en.300.bin')
+@st.cache(suppress_st_warning = True)
+def predict_emotion(model: fasttext.FastText._FastText, sentence: str) -> str:
+    predictions = model.predict(sentence)
+    label = predictions[0][0].split("__label__")[1]
+    label = label.title()
+    confidence = predictions[1][0]
+    return "{} ({:.2f}% confident)".format(label, confidence * 100)
 
 # App title
 
@@ -277,6 +292,7 @@ sentences_train, sentences_test, y_train, y_test = train_test_split(
    sentences, y, test_size=0.25, random_state=1000)
 
 vectorizer_input = st.sidebar.radio('Vectorizer', ['CountVectorizer','TfidfVectorizer'])
+
 
 tf, matrix = create_model(data, vectorizer_input)
 
@@ -344,6 +360,9 @@ if chapter_input == 'Classification':
         acc, pred, pred_labels = create_svm(X_train, y_train, X_test, y_test)
         display_metrics(acc, pred, pred_labels)
     elif classifier == 'Neural Network':
-        # pred_nn, pred_labels_nn = 
-        sentences_pred, history_df, acc_nn = create_neural_network(X_train, y_train, X_test, y_test)
-        display_nn()
+        embedding_input = st.radio('Embedding', ['none','fastText'])
+        if embedding_input == 'none':
+            sentences_pred, history_df, acc_nn = create_neural_network(X_train, y_train, X_test, y_test)
+            display_nn()
+        elif embedding_input == 'fastText':
+            make_ft()
