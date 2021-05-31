@@ -24,8 +24,6 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
 
-from src.d00_utils import ft
-
 # ------------------------------------------------------------------------------------------------
 
 # Define functions 
