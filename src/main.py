@@ -17,7 +17,7 @@ from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report, accuracy_score
 from sklearn.linear_model import LogisticRegression
 
 from tensorflow import keras
@@ -197,10 +197,13 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     pred.rename(columns={0: "anger", 1: "fear", 2: "happy", 3: "love", 4: "sadness", 5: "surprise"}, errors="raise", inplace=True)
     sentences_df = pd.DataFrame(sentences_test)
     sentences_pred = pd.concat([sentences_df, pred], axis=1)
-    #st.write(sentences_pred)
-    return sentences_pred, history_df   
+    y_pred = pred.idxmax(axis=1)
+    sentences_pred['y_pred'] = y_pred
+    acc = accuracy_score(y_pred, y_test)
+    return sentences_pred, history_df, acc
 
 def display_nn():
+    st.write('Accuracy: ', acc_nn)
     st.write(sentences_pred)
     # Show the learning curves
     history_df.loc[:, ['loss', 'val_loss']].plot()
@@ -342,5 +345,5 @@ if chapter_input == 'Classification':
         display_metrics(acc, pred, pred_labels)
     elif classifier == 'Neural Network':
         # pred_nn, pred_labels_nn = 
-        sentences_pred, history_df = create_neural_network(X_train, y_train, X_test, y_test)
+        sentences_pred, history_df, acc_nn = create_neural_network(X_train, y_train, X_test, y_test)
         display_nn()
