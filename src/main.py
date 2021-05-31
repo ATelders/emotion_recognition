@@ -299,9 +299,9 @@ if chapter_input == 'Analysis and processing':
     st.pyplot()
     st.subheader('25 most frequent words')
     if data_input == 'Kaggle':
-        st.image('../assets/frequency_kaggle.png')
+        st.image('./assets/frequency_kaggle.png')
     if data_input == 'data.world':
-        st.image('../assets/frequency_world.png')
+        st.image('./assets/frequency_world.png')
 
 
 
