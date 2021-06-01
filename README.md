@@ -1,8 +1,10 @@
 # Emotion Recognition App
 
-Emotion Recognition is an app made with Streamlit in Python, which purpose is to test different machine learning and deep learning algorithms on two datasets, to find emotions in text.
+Emotion Recognition is an app made with Streamlit in Python, and using NLP, which purpose is to find emotions in text, by using machine learning and deep learning algorithms on two datasets, and compare the different techniques with metrics.
 
 https://share.streamlit.io/atelders/emotion_recognition/main/src/main.py
+
+Click on Classification, Neural Network and fastText to test with a custom sentence.
 
 ## Datasets
 
@@ -14,6 +16,10 @@ From data.world : text_emotion.csv
 ## Source Code
 
 Source code of the app is in src/main.py
+
+## Libraries
+
+streamlit, pandas, matplotlib.pyplot, seaborn, fasttext, io, pickle, pathlib, sklearn, tensorflow.keras
 
 ## File Structure
 
