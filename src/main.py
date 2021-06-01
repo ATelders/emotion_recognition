@@ -8,7 +8,6 @@ import fasttext
 import io
 import pickle
 import pathlib
-import texthero as hero
 
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
@@ -298,34 +297,9 @@ st.sidebar.write('---')
 
 data_input = st.sidebar.radio('Data', ['Kaggle','data.world', 'data.world binary'])
 data, labels = load_data()
-
-# ------------------------------------------------------------------------------------------------
-
-# Preprocessing
-
-# Target preprocessing
 le = preprocessing.LabelEncoder()
 y = le.fit_transform(data['emotion'])
 labels_num = le.fit_transform(labels)
-
-# Text preprocessing
-
-# custom_pipeline = [hero.preprocessing.fillna,
-#                    hero.preprocessing.lowercase,
-#                    hero.preprocessing.remove_digits,
-#                    hero.preprocessing.remove_punctuation,
-#                    hero.preprocessing.remove_diacritics,
-#                    hero.preprocessing.remove_stopwords,
-#                    hero.preprocessing.remove_whitespace]
-data['text'] = data['text'].pipe(hero.clean)
-
-data['pca'] = (
-            data['text']
-            .pipe(hero.tfidf)
-            .pipe(hero.pca)
-   )
-
-hero.scatterplot(data, col='pca', color='topic', title="Emotions")
 
 sentences = data['text'].values
 
