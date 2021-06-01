@@ -43,6 +43,18 @@ def load_data():
         data['text'] = data['content']
         data = data[['text', 'emotion']]
         labels = data['emotion'].unique()
+    elif data_input == 'data.world binary':
+        DATA_URL = ('./data/raw/text_emotion.csv')
+        data = pd.read_csv(DATA_URL)
+        data['emotion'] = data['sentiment']
+        data['text'] = data['content']
+        data = data[['text', 'emotion']]
+        data = data.drop(data[(data.emotion == 'neutral') | (data.emotion == 'empty') | (data.emotion == 'surprise')].index)
+        pos_emotions = ['enthusiasm', 'love', 'fun', 'happiness', 'relief']
+        data.loc[data['emotion'].isin(pos_emotions), 'binary'] = 1
+        data.loc[~data['emotion'].isin(pos_emotions), 'binary'] = 0
+        data = data.rename(columns={'emotion':'emotion_label', 'binary': 'emotion'})
+        labels = data['emotion'].unique()
     else:
         st.write('No data')
     lowercase = lambda x: str(x).lower()
@@ -174,17 +186,18 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     loss='sparse_categorical_crossentropy',
     metrics = 'accuracy',
     )
-    history = model.fit(
-    X_train, y_train,
-    validation_data=(X_test, y_test),
-    batch_size=100,
-    epochs=35,
-    verbose=1
-    )
     early_stopping = keras.callbacks.EarlyStopping(
     patience=5,
     min_delta=0.001,
     restore_best_weights=True,
+    )
+    history = model.fit(
+    X_train, y_train,
+    validation_data=(X_test, y_test),
+    batch_size=100,
+    epochs=50,
+    verbose=1,
+    callbacks=[early_stopping],
     )
     history_df = pd.DataFrame(history.history)
     #st.write(history_df)
@@ -201,7 +214,9 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     sentences_pred = pd.concat([sentences_df, pred], axis=1)
     y_pred = pred.idxmax(axis=1)
     sentences_pred['y_pred'] = y_pred
-    acc = accuracy_score(y_pred, y_test)
+    if data_input == 'Kaggle' or data_input == 'data.world':
+        y_test = le.inverse_transform(y_test)
+    acc = accuracy_score(y_test, y_pred)
     return sentences_pred, history_df, acc
 
 def display_nn():
@@ -280,7 +295,7 @@ st.sidebar.write('---')
 
 # Select the data source
 
-data_input = st.sidebar.radio('Data', ['Kaggle','data.world'])
+data_input = st.sidebar.radio('Data', ['Kaggle','data.world', 'data.world binary'])
 data, labels = load_data()
 le = preprocessing.LabelEncoder()
 y = le.fit_transform(data['emotion'])
