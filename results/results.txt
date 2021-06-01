@@ -1,1 +1,0 @@
-Intermediate analysis as HTML, PDF, LaTeX, etc.
