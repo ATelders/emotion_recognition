@@ -1,4 +1,3 @@
-'''bash
 # Emotion Recognition App
 
 Emotion Recognition is an app made with Streamlit in Python, which purpose is to test different machine learning and deep learning algorithms on two datasets, to find emotions in text.
@@ -18,6 +17,7 @@ Source code of the app is in src/main.py
 
 ## File Structure
 
+'''bash
 ├── assets
 │   ├── frequency_kaggle.png
 │   └── frequency_world.png
