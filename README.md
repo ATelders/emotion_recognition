@@ -17,7 +17,7 @@ Source code of the app is in src/main.py
 
 ## File Structure
 
-'''bash
+```bash
 ├── assets
 │   ├── frequency_kaggle.png
 │   └── frequency_world.png
@@ -55,4 +55,4 @@ Source code of the app is in src/main.py
 │   └── words_frequency.py
 ├── test.txt
 └── train.txt
-'''
+```
