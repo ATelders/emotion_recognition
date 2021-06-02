@@ -75,8 +75,9 @@ def create_model(data, model):
 
 @st.cache
 def create_logistic_regression(X_train, y_train, X_test, y_test):
-    # classifier = LogisticRegression(max_iter=1000)
-    # classifier.fit(X_train, y_train)
+    '''
+    Create a logistic regression model
+    '''
     if data_input == "Kaggle":
         if vectorizer_input == "CountVectorizer":
             filename = './data/models/lr_kaggle_count.sav'
@@ -95,8 +96,9 @@ def create_logistic_regression(X_train, y_train, X_test, y_test):
 
 @st.cache
 def create_decision_tree(X_train, y_train, X_test, y_test):
-    # classifier = DecisionTreeClassifier()
-    # classifier.fit(X_train, y_train)
+    '''
+    Create a decision tree model
+    '''
     if data_input == "Kaggle":
         if vectorizer_input == "CountVectorizer":
             filename = './data/models/dt_kaggle_count.sav'
@@ -115,19 +117,11 @@ def create_decision_tree(X_train, y_train, X_test, y_test):
 
 @st.cache
 def create_random_forest(X_train, y_train, X_test, y_test):
+    '''
+    Create a random forest model
+    '''
     classifier = RandomForestClassifier()
     classifier.fit(X_train, y_train)
-    # if data_input == "Kaggle":
-    #     if vectorizer_input == "CountVectorizer":
-    #         filename = './data/models/rf_kaggle_count.sav'
-    #     elif vectorizer_input == "TfidfVectorizer":
-    #         filename = './data/models/rf_kaggle_tfidf.sav'
-    # elif data_input == "data.world":
-    #     if vectorizer_input == "CountVectorizer":
-    #         filename = './data/models/rf_world_count.sav'
-    #     elif vectorizer_input == "TfidfVectorizer":
-    #         filename = './data/models/rf_world_tfidf.sav'
-    #classifier = pickle.load(open(filename, 'rb'))
     acc = classifier.score(X_test, y_test)
     pred = classifier.predict(X_test)
     pred_labels = le.inverse_transform(pred)
@@ -135,8 +129,9 @@ def create_random_forest(X_train, y_train, X_test, y_test):
 
 @st.cache
 def create_svm(X_train, y_train, X_test, y_test):
-    # classifier = SVC()
-    # classifier.fit(X_train, y_train)
+    '''
+    Create a support vector machine model
+    '''
     if data_input == "Kaggle":
         if vectorizer_input == "CountVectorizer":
             filename = './data/models/svm_kaggle_count.sav'
@@ -154,21 +149,28 @@ def create_svm(X_train, y_train, X_test, y_test):
     return acc, pred, pred_labels
 
 def display_metrics(acc, pred, pred_labels):
-        st.write('Accuracy: ', acc)
-        st.write('Confusion matrix: ')
-        #display confusion matrix with labels
-        cm = confusion_matrix(y_test_labels, pred_labels, labels=labels)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
-        disp.plot(cmap=plt.cm.Blues)
-        plt.xticks(rotation=90)
-        st.pyplot()
-        report = classification_report(y_test_labels, pred_labels)
-        st.code(report)
+    '''
+    Display the accuracy and the confusion matrix
+    '''
+    st.write('Accuracy: ', acc)
+    st.write('Confusion matrix: ')
+    #display confusion matrix with labels
+    cm = confusion_matrix(y_test_labels, pred_labels, labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=labels)
+    disp.plot(cmap=plt.cm.Blues)
+    plt.xticks(rotation=90)
+    st.pyplot()
+    report = classification_report(y_test_labels, pred_labels)
+    st.code(report)
 
 @st.cache(suppress_st_warning=True)
 def create_neural_network(X_train, y_train, X_test, y_test):
+    # number of input neurons = number of words in the corpus
+    st.write(X_train.shape[1])
     input_dim = X_train.shape[1]
+    # number of output neurons = number of emotions
     output_dim = len(labels)
+    # create the model with normalization and dropout
     model = keras.Sequential([
     layers.Dense(10, input_shape=(input_dim,), activation='relu'),
     layers.Dropout(0.2),
@@ -186,6 +188,7 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     loss='sparse_categorical_crossentropy',
     metrics = 'accuracy',
     )
+    # set callbacks
     early_stopping = keras.callbacks.EarlyStopping(
     patience=5,
     min_delta=0.001,
@@ -200,26 +203,28 @@ def create_neural_network(X_train, y_train, X_test, y_test):
     callbacks=[early_stopping],
     )
     history_df = pd.DataFrame(history.history)
-    #st.write(history_df)
-    
-    
+    # Make predictions on test set
     pred = pd.DataFrame(model.predict(X_test))
-
+    # Transform numeric columns ids back to emotions names
     temp_cols = pred.columns
     emotion_cols = le.inverse_transform(temp_cols)
-
     pred.columns = emotion_cols
-
+    # Create dataframe for visualization of sentences with probabilities 
+    # of each emotion and show the emotion with the highest probability
     sentences_df = pd.DataFrame(sentences_test)
     sentences_pred = pd.concat([sentences_df, pred], axis=1)
     y_pred = pred.idxmax(axis=1)
     sentences_pred['y_pred'] = y_pred
+    # Compute the accuracy on the test set
     if data_input == 'Kaggle' or data_input == 'data.world':
         y_test = le.inverse_transform(y_test)
     acc = accuracy_score(y_test, y_pred)
     return sentences_pred, history_df, acc
 
 def display_nn():
+    '''
+    Display metrics for the neural network model
+    '''
     st.write('Accuracy: ', acc_nn)
     st.write(sentences_pred)
     # Show the learning curves
@@ -237,6 +242,9 @@ def load_vectors(fname):
     return data
 
 def make_ft():
+    '''
+    Use a pretrained fastText model
+    '''
     LOAD_MODEL = False
     model_file_name = "fasttext_{}.bin".format(data_input)
     df = data.copy()
@@ -288,7 +296,6 @@ st.title('Emotion recognition')
 # User menu
 
 chapter_input = st.sidebar.radio('Menu', ['Analysis and processing','Classification'])
-
 st.sidebar.write('---')
 
 # ------------------------------------------------------------------------------------------------
@@ -308,12 +315,9 @@ sentences_train, sentences_test, y_train, y_test = train_test_split(
 
 vectorizer_input = st.sidebar.radio('Vectorizer', ['CountVectorizer','TfidfVectorizer'])
 
-
 tf, matrix = create_model(data, vectorizer_input)
 
 tf.fit(sentences_train)
-
-
 
 # ------------------------------------------------------------------------------------------------
 
@@ -324,7 +328,6 @@ if chapter_input == 'Analysis and processing':
     if st.checkbox('Show dataframe'): 
         st.write(data)
     
-
     results = data['emotion'].value_counts()
     sns.histplot(data=data, y="emotion")
     st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -364,8 +367,7 @@ if chapter_input == 'Classification':
     if classifier=='Logistic Regression':
         acc, pred, pred_labels = create_logistic_regression(X_train, y_train, X_test, y_test)
         display_metrics(acc, pred, pred_labels)
-
-    if classifier=='Decision Tree':
+    elif classifier=='Decision Tree':
         acc, pred, pred_labels = create_decision_tree(X_train, y_train, X_test, y_test)
         display_metrics(acc, pred, pred_labels)
     elif classifier == 'Random Forest':
