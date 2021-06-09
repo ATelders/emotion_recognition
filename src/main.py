@@ -33,9 +33,9 @@ def load_data():
     Load data based on the user's choice
     '''
     if data_input == 'Kaggle':
-        DATA_URL = ('./data/raw/Emotion_final.csv')
+        DATA_URL = ('../data/raw/Emotion_final.csv')
         data = pd.read_csv(DATA_URL)
-        labels = ['happy', 'sadness', 'love', 'anger', 'fear', 'surprise'] 
+        labels = ['happy', 'sadness', 'love', 'anger', 'fear', 'surprise']
     elif data_input == 'data.world':
         DATA_URL = ('./data/raw/text_emotion.csv')
         data = pd.read_csv(DATA_URL)
@@ -70,7 +70,8 @@ def create_model(data, model):
         tf = TfidfVectorizer(analyzer = 'word', ngram_range = (1, 2), min_df = 0, stop_words = {'english'})
     elif model == 'CountVectorizer':
         tf = CountVectorizer(analyzer = 'word', ngram_range = (1, 2), min_df = 0, stop_words = {'english'})   
-    matrix = tf.fit_transform(data['text'])
+    matrix = tf.fit_transform(data)
+    pickle.dump(tf, open('../data/models/tfidf.sav', 'wb'))
     return tf, matrix
 
 @st.cache
@@ -304,6 +305,7 @@ st.sidebar.write('---')
 
 data_input = st.sidebar.radio('Data', ['Kaggle','data.world', 'data.world binary'])
 data, labels = load_data()
+
 le = preprocessing.LabelEncoder()
 y = le.fit_transform(data['emotion'])
 labels_num = le.fit_transform(labels)
@@ -315,7 +317,7 @@ sentences_train, sentences_test, y_train, y_test = train_test_split(
 
 vectorizer_input = st.sidebar.radio('Vectorizer', ['CountVectorizer','TfidfVectorizer'])
 
-tf, matrix = create_model(data, vectorizer_input)
+tf, matrix = create_model(sentences_train, vectorizer_input)
 
 tf.fit(sentences_train)
 
